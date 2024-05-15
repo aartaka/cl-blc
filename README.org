@@ -1,0 +1,44 @@
+This is a Quickproject template for my projects. Mostly a fork of
+Atlas Engineer's abandoned ntemplate. It saves some hour of repository
+set up and is as easy to use as
+
+#+begin_src lisp
+  ;; In your REPL.
+  (ql:quickload :quickproject)
+  ;; IMPORTANT: Delete the .git directory to not break Quickproject copying.
+  ;; FIXME: Make Quickproject ignore the .git directory.
+  (delete-directory #p"/path/to/quickproject-template/.git/" :recursive t)
+  ;; Finally, create the project based on a template.
+  (quickproject:make-project
+   #p"/path/to/your/lib/"
+   :template-directory #p"/path/to/quickproject-template/"
+   :author "Artyom Bologov"
+   :license "BSD-2 Clause")
+#+end_src
+
+And then go on with doing the actual work, testing, and documentation ;)
+
+#+TITLE:cl-blc
+
+*What cl-blc is.*
+
+cl-blc does...
+
+* Getting Started
+Clone the Git repository:
+#+begin_src sh
+  git clone --recursive https://github.com/aartaka/cl-blc ~/common-lisp/
+#+end_src
+
+And then load ~:cl-blc~ in the REPL:
+#+begin_src lisp
+  (asdf:load-system :cl-blc)
+  ;; or, if you use Quicklisp
+  (ql:quickload :cl-blc)
+#+end_src
+
+* Examples
+
+#+begin_src lisp
+  ;; Basic example here, see more in package.lisp.
+#+end_src
