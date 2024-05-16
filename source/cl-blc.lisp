@@ -361,8 +361,6 @@ When BINARY, write raw bytes instead of one & zero chars.")
           (get-output-stream-string stream)
           (values)))))
 
-(length (term->bit-list (read #p"~/git/cl-blc/prog.lambda")))
-
 (defgeneric print (term stream)
   (:documentation "Print the literal BLC representation of the TERM to STREAM.")
   (:method ((term list) stream)
@@ -372,8 +370,3 @@ When BINARY, write raw bytes instead of one & zero chars.")
   (:documentation "Print the pretty BLC representation of the TERM to STREAM.")
   (:method ((term list) stream)
     (write term :stream stream :pretty t)))
-
-(read "0000110")
-
-;; => (Λ (Λ 1)), NIL
-;; => (Λ (Λ 1))
