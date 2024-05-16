@@ -4,7 +4,7 @@
 (in-package :asdf)
 
 (defsystem "cl-blc"
-  :description "Describe cl-blc here"
+  :description "cl-blc is a library/CLI tool to run/process Binary Lambda Calculus."
   :author "Artyom Bologov"
   :homepage "https://github.com/aartaka/cl-blc"
   :bug-tracker "https://github.com/aartaka/cl-blc/issues"

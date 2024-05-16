@@ -12,8 +12,33 @@
            #:coerce
            #:write
            #:print
-           #:princ
-           ;; TODO
-           #:run ;; On user/file input
-           )
-  (:documentation "Describe `cl-blc' package here"))
+           #:princ)
+  (:export #:read
+           #:eval
+           #:compile
+           #:coerce
+           #:write
+           #:print
+           #:princ)
+  (:documentation "`cl-blc' exports symbols shadowing standard CL.
+These symbols implement the logic similar to CL ones, but for Binary
+Lambda Calculus use-cases:
+- `read' reads a valid BLC from anywhere to IR.
+- `eval' evaluates (reduces, technically) the given IR.
+- `compile' converts Lisp form/data into IR.
+- `coerce' converts IR back to Lisp (effectively reversing `compile').
+- `write', `print', and `princ' allow printing the given IR with a
+  range of parameters.
+
+IR is mapped directly from BLC:
+- Forms starting with λ are abstractions.
+- Lists are applications.
+- And numbers are relative argument references.
+
+IR for TRUE is:
+(compile '(lambda (x y) x))
+;; => (Λ (Λ 1))
+(read \"0000110\")
+;; => (Λ (Λ 1)), NIL
+(compile t)
+;; => (Λ (Λ 1))"))

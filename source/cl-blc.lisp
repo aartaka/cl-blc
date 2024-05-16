@@ -115,7 +115,7 @@ But it works in a typical eval/apply loop:
 Recursively, until all of the TREE is covered.")
   (:method ((tree integer) (replacement list) &optional (depth 0))
     (if (= depth tree)
-        (copy-tree replacement)
+        replacement
         tree))
   (:method ((tree list) (replacement list) &optional (depth 0))
     depth
@@ -129,14 +129,14 @@ Recursively, until all of the TREE is covered.")
           (typecase first
             (integer
              (if (= first depth)
-                 (copy-tree replacement)
+                 replacement
                  first))
             (list
              (replace first replacement depth)))
           (typecase second
             (integer
              (if (= second depth)
-                 (copy-tree replacement)
+                 replacement
                  second))
             (list
              (replace second replacement depth)))))))))
@@ -351,7 +351,7 @@ When BINARY, write raw bytes instead of one & zero chars.")
         (pretty
          ;; TODO
          (cl:write (coerce term t) :stream stream
-                   :escape t :circle nil :readably t :level nil :length nil :right-margin nil))
+                                   :escape t :circle nil :readably t :level nil :length nil :right-margin nil))
         (literal
          (cl:write term :stream stream
                         :escape t :circle nil :readably t :level nil :length nil :right-margin nil))
@@ -360,6 +360,8 @@ When BINARY, write raw bytes instead of one & zero chars.")
       (if (null initial-stream)
           (get-output-stream-string stream)
           (values)))))
+
+(length (term->bit-list (read #p"~/git/cl-blc/prog.lambda")))
 
 (defgeneric print (term stream)
   (:documentation "Print the literal BLC representation of the TERM to STREAM.")
@@ -370,3 +372,8 @@ When BINARY, write raw bytes instead of one & zero chars.")
   (:documentation "Print the pretty BLC representation of the TERM to STREAM.")
   (:method ((term list) stream)
     (write term :stream stream :pretty t)))
+
+(read "0000110")
+
+;; => (Λ (Λ 1)), NIL
+;; => (Λ (Λ 1))
