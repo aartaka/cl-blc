@@ -1,28 +1,12 @@
-This is a Quickproject template for my projects. Mostly a fork of
-Atlas Engineer's abandoned ntemplate. It saves some hour of repository
-set up and is as easy to use as
-
-#+begin_src lisp
-  ;; In your REPL.
-  (ql:quickload :quickproject)
-  ;; IMPORTANT: Delete the .git directory to not break Quickproject copying.
-  ;; FIXME: Make Quickproject ignore the .git directory.
-  (delete-directory #p"/path/to/quickproject-template/.git/" :recursive t)
-  ;; Finally, create the project based on a template.
-  (quickproject:make-project
-   #p"/path/to/your/lib/"
-   :template-directory #p"/path/to/quickproject-template/"
-   :author "Artyom Bologov"
-   :license "BSD-2 Clause")
-#+end_src
-
-And then go on with doing the actual work, testing, and documentation ;)
-
 #+TITLE:cl-blc
 
-*What cl-blc is.*
+*cl-blc is a library and a CLI tool for working with Binary Lambda Calculus.*
 
-cl-blc does...
+cl-blc ~read~-s, ~eval~-uates and (pretty-)-~print~-s Binary Lambda Calculus expressions. Also includes a CLI tool for compilation of BLC (both one-bit and eight-bit encoding) to standalone executables and running it interactively.
+
+See
+- https://tromp.github.io/cl/cl.html
+- https://justine.lol/lambda/
 
 * Getting Started
 Clone the Git repository:
@@ -37,8 +21,26 @@ And then load ~:cl-blc~ in the REPL:
   (ql:quickload :cl-blc)
 #+end_src
 
+No dependencies required, it's all plain ANSI Common Lisp.
+
+To make a CLI tool:
+#+begin_src sh
+  cd /path/to/cl-blc/
+  make blc
+#+end_src
+
+And then use it like
+#+begin_src sh
+  $ ./blc compile /path/to/cl-blc/example/first.blc
+  $ ./first input.txt
+  h
+  # or just provide input interactively, terminating with null char (Ctrl-D)
+  $ ./first
+  hello
+  # Ctrl-D
+  h
+#+end_src
+
 * Examples
 
-#+begin_src lisp
-  ;; Basic example here, see more in package.lisp.
-#+end_src
+See [[./source/package.lisp]] for usage examples.

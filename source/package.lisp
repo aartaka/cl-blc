@@ -37,10 +37,12 @@ IR is mapped directly from BLC:
 - Lists are applications.
 - And numbers are relative argument references.
 
-IR for TRUE is:
-(compile '(lambda (x y) x))
-;; => (Λ (Λ 1))
+For instance, IR for TRUE is:
 (read \"0000110\")
 ;; => (Λ (Λ 1)), NIL
+(compile '(lambda (x y) x))
+;; => (Λ (Λ 1))
 (compile t)
-;; => (Λ (Λ 1))"))
+;; => (Λ (Λ 1))
+
+See the docstrings of the exported functions for usage examples."))

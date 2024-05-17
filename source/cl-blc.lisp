@@ -7,11 +7,17 @@
   (:documentation "Parse the DATA as source of BLC expressions.
 Supports:
 - Bitvectors.
+ (read #*0000110)
+ ;; => (Λ (Λ 1))
 - Lists of numbers.
-- Byte arrays.
+- Unsigned byte arrays.
 - Strings.
-- Streams.
-- Pathnames (both true binary and filled with ones and zero chars)."))
+ (read \"0000110\")
+ ;; => (Λ (Λ 1)), NIL
+- Streams (both binary and character).
+- Pathnames (both true binary and filled with ones and zero chars):
+ (read \"/path/to/cl-blc/example/length.blc\")
+ ;; => (Λ ((Λ (((Λ (Λ (Λ ((0 2) 1)))) 0) (Λ (Λ 0)))) (0 (Λ (Λ 1)))))"))
 
 (defmethod read ((data bit-vector))
   (read (cl:coerce data 'list)))
@@ -22,14 +28,17 @@ Supports:
                      :element-type '(unsigned-byte 8))
     (read s)))
 
-(defun stream->bytevector (stream)
-  (cl:coerce (loop for byte = (read-byte stream nil nil)
-                   while byte
-                   collect byte)
-             'vector))
+(defun stream->sequence (stream)
+  (if (equal '(unsigned-byte 8)
+             (stream-element-type stream))
+      (cl:coerce (loop for byte = (read-byte stream nil nil)
+                       while byte
+                       collect byte)
+                 'vector)
+      (uiop:slurp-stream-string stream)))
 
 (defmethod read ((data stream))
-  (read (stream->bytevector data)))
+  (read (stream->sequence data)))
 
 (defmethod integer->bit-list (integer)
   (flet ((bool->integer (bool)
@@ -348,10 +357,12 @@ TYPE might be one of:
              (term->bit-list (first term))
              (term->bit-list (second term))))))
 
-(defgeneric write (term &key stream pretty binary)
+(defgeneric write (term &key stream pretty binary literal)
   (:documentation "Write the `read' or `compile'd TERM to STREAM.
 If PRETTY, try to convert TERM to number, list, or string.
-When BINARY, write raw bytes instead of one & zero chars.")
+When BINARY, write raw bytes instead of one & zero chars.
+When literal, print the IR for the TERM.
+In the absence of the above, print ones and zeros for TERM.")
   (:method ((term list) &key (stream t) (literal nil) (pretty nil) (binary nil))
     (let ((initial-stream stream)
           (stream (etypecase stream
@@ -377,7 +388,6 @@ When BINARY, write raw bytes instead of one & zero chars.")
                                  (or eight 0))
                               stream)))
         (pretty
-         ;; TODO
          (cl:write (coerce term t) :stream stream
                                    :escape t :circle nil :readably t :level nil :length nil :right-margin nil))
         (literal
@@ -390,11 +400,11 @@ When BINARY, write raw bytes instead of one & zero chars.")
           (values)))))
 
 (defgeneric print (term stream)
-  (:documentation "Print the literal BLC representation of the TERM to STREAM.")
+  (:documentation "Print the literal (like (Λ (Λ 1))) BLC representation of the TERM to STREAM.")
   (:method ((term list) stream)
     (write term :stream stream :literal t)))
 
 (defgeneric princ (term stream)
-  (:documentation "Print the pretty BLC representation of the TERM to STREAM.")
+  (:documentation "Print the prettified (converted to Lisp whenever possible) TERM to STREAM.")
   (:method ((term list) stream)
     (write term :stream stream :pretty t)))
