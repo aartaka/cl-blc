@@ -93,6 +93,35 @@ Supports:
           (nthcdr (1+ (length ones))
                   (rest data))))))))
 
+;; (defclass base () ())
+;; (defclass abstraction (base)
+;;   ((body :accessor body
+;;          :type base
+;;          :initarg :body)))
+;; (defclass application ()
+;;   ((function :accessor function
+;;              :type base
+;;              :initarg :function)
+;;    (argument :accessor argument
+;;              :type base
+;;              :initarg :argument)))
+;; (defclass reference ()
+;;   ((index :accessor index
+;;           :type (or integer symbol)
+;;           :initarg :index)))
+
+;; (defgeneric dom-ify (tree)
+;;   (:documentation "Internal: turn lists into `base' and its children.
+;; Useful for `optimize' passes.")
+;;   (:method ((tree list))
+;;     (if (eq 'λ (first tree))
+;;         (make-instance 'abstraction :body (dom-ify (second tree)))
+;;         (make-instance 'application
+;;                        :function (dom-ify (first tree))
+;;                        :argument (dom-ify (second tree)))))
+;;   (:method ((tree integer))
+;;     (make-instance 'reference :index tree)))
+
 (defgeneric eval (tree)
   (:documentation "Technically, β-reduce.
 But it works in a typical eval/apply loop:
@@ -213,7 +242,6 @@ All the compilation is reversible with `coerce', given the right type.")
                         ,(convert (rest rest))))
                    (compile nil))))
       (convert (cl:coerce expr 'list)))))
-
 
 (defgeneric coerce (term type &optional inner-type final-type)
   (:documentation "Try converting the TERM to a Lisp TYPE.
