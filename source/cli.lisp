@@ -3,28 +3,6 @@
 
 (in-package :cl-blc)
 
-(defun join-newlines (strs)
-  "Join STRS, putting newlines between them."
-  (reduce (lambda (acc str)
-            (uiop:strcat acc #\Newline str))
-          (rest strs)
-          :initial-value (first strs)))
-
-(defgeneric read-input-from (in)
-  (:documentation "INTERNAL: read a valid string from IN.")
-  (:method ((in (eql *standard-input*)))
-    (let ((lines (loop for line = (read-line in nil nil)
-                       until (or (null line)
-                                 (string-equal line ".")
-                                 (string-equal line "!"))
-                       collect line)))
-      (join-newlines lines)))
-  (:method ((in pathname))
-    (with-open-file (s in)
-      (uiop:slurp-stream-string s)))
-  (:method ((in stream))
-    (uiop:slurp-stream-string in)))
-
 (defun herefile (file)
   (uiop:merge-pathnames*
    (uiop:parse-native-namestring file)
@@ -122,7 +100,7 @@ OUT is either a file name or -- to print to standard output.")
                                            (out *standard-output*))
                         uiop:*command-line-arguments*
                       (let ((res (eval (list (quote ,term)
-                                             (compile (read-input-from (in->stream in)))))))
+                                             (compile (uiop:slurp-stream-string (in->stream in)))))))
                         (print-cased
                          res
                          (out->stream out)
@@ -137,7 +115,7 @@ OUT is either a file name or -- to print to standard output.")
                 (in (in->stream in))
                 (out (out->stream out))
                 (res (eval (list (read prog)
-                                 (compile (read-input-from in))))))
+                                 (compile (uiop:slurp-stream-string in))))))
            (print-cased res out (intern (string-upcase type) :keyword))))
        (uiop:shell-boolean-exit t))
       (:uni2bin
