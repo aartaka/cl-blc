@@ -15,9 +15,13 @@
   :build-operation "program-op"
   :build-pathname "blc"
   :entry-point "cl-blc::entry-point"
-  :components ((:file "source/package")
-               (:file "source/cl-blc")
-               (:file "source/cli"))
+  :components ((:module "cl-blc"
+                :pathname "source/"
+                :components
+                ((:file "package")
+                 (:file "utils")
+                 (:file "cl-blc")
+                 (:file "cli"))))
   :in-order-to ((test-op (test-op "cl-blc/tests"))))
 
 (defsystem "cl-blc/tests"

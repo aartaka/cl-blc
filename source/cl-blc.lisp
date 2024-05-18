@@ -144,33 +144,34 @@ Supports:
          (first (elt env (- term depth)))
          term))))
 
-(defgeneric eval (tree)
-  (:documentation "Technically, β-reduce via Krivine machine.")
-  (:method ((tree list))
-    (loop with term = tree
-          with stack = (list)
-          with env = (list)
-          when (and (listp term)
-                    (eql (first term) 'λ)
-                    stack) ;; Abstraction
-            do (push (pop stack) env)
-            and do (setf term (second term))
-          else when (and (listp term)
-                         (eql (first term) 'λ))
-                 ;; FIXME: These last bits of env should be plugged
-                 ;; in, but they aren't somewhy.
-                 do (return (plug-env term env))
-          else when (listp term) ;; Application
-                 do (push (list (second term) env) stack)
-                 and do (setf term (first term))
-          else when (zerop term) ;; Zero
-                 do (destructuring-bind (new-term new-env)
-                        (pop env)
-                      (setf term new-term
-                            env new-env))
-          else when (plusp term) ;; Succ
-                 do (pop env)
-                 and do (decf term))))
+(deftermgeneric
+    eval (tree)
+    "Technically, β-reduce via Krivine machine."
+    (error "Something is wrong—eval should never be called on reference.")
+  (loop with term = tree
+        with stack = (list)
+        with env = (list)
+        when (and (listp term)
+                  (eql (first term) 'λ)
+                  stack) ;; Abstraction
+          do (push (pop stack) env)
+          and do (setf term (second term))
+        else when (and (listp term)
+                       (eql (first term) 'λ))
+               ;; FIXME: These last bits of env should be plugged
+               ;; in, but they aren't somewhy.
+               do (return (plug-env term env))
+        else when (listp term) ;; Application
+               do (push (list (second term) env) stack)
+               and do (setf term (first term))
+        else when (zerop term) ;; Zero
+               do (destructuring-bind (new-term new-env)
+                      (pop env)
+                    (setf term new-term
+                          env new-env))
+        else when (plusp term) ;; Succ
+               do (pop env)
+               and do (decf term)))
 
 (defgeneric compile (expr &optional stack)
   (:documentation "Compile Lispy EXPR into binary lambdas.
