@@ -28,3 +28,24 @@ Also forces the docs, which is a virtue"
     (destructuring-bind (,@bindings)
         ,form
       ,@body)))
+
+(defun tree-find-if (predicate tree)
+  (typecase tree
+    (integer (when (funcall predicate tree)
+               tree))
+    (list (if (lambda-p tree)
+              (tree-find-if predicate (second tree))
+              (or (tree-find-if predicate (first tree))
+                  (tree-find-if predicate (second tree)))))))
+
+(defun closed-p (term &optional (depth 0))
+  (typecase term
+    (integer
+     (< term depth))
+    (list
+     (cond
+       ((lambda-p term)
+        (closed-p (second term) (1+ depth)))
+       (t
+        (and (closed-p (first term) depth)
+             (closed-p (second term) depth)))))))

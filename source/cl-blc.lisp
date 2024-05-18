@@ -155,9 +155,18 @@ Supports:
           do (push (pop stack) env)
           and do (setf term (second term))
         else when (lambda-p term)
-               ;; FIXME: These last bits of env should be plugged
-               ;; in, but they aren't somewhy.
-               do (return (plug-env term env))
+               ;; Reduce the inner terms if closed. Not sure it's ever
+               ;; called...
+               do (return (loop with tree
+                                ;; FIXME: These last bits of env
+                                ;; should be plugged in, but they
+                                ;; aren't somewhy.
+                                  = (plug-env term env)
+                                ;; TREE is a lambda, so only search its body.
+                                for maybe-closed = (tree-find-if (second tree) #'closed-p)
+                                while maybe-closed
+                                do (subst (eval maybe-closed) maybe-closed tree)
+                                finally (return tree)))
         else when (listp term) ;; Application
                do (push (list (second term) env) stack)
                and do (setf term (first term))
@@ -365,10 +374,12 @@ In the absence of the above, print ones and zeros for TERM.")
                               stream)))
         (pretty
          (cl:write (coerce term t) :stream stream
-                                   :escape t :circle nil :readably t :level nil :length nil :right-margin nil))
+                                   :escape t :circle nil :readably t
+                                   :level nil :length nil :right-margin nil))
         (literal
          (cl:write term :stream stream
-                        :escape t :circle nil :readably t :level nil :length nil :right-margin nil))
+                        :escape t :circle nil :readably t
+                        :level nil :length nil :right-margin nil))
         (t (loop for bit in (term->bit-list term)
                  do (format stream "~d" bit))))
       (if (null initial-stream)
