@@ -3,6 +3,10 @@
 
 (in-package :cl-blc)
 
+(defun lambda-p (term)
+  (and (listp term)
+       (eq 'λ (first term))))
+
 (defmacro deftermgeneric (name (term-var &rest args)
                           documentation integer-case &body list-case)
   "Abstract away the frequent pattern of

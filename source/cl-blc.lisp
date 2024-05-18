@@ -133,8 +133,7 @@ Supports:
 
 (defun plug-env (term env &optional (depth 0))
   (cond
-    ((and (listp term)
-          (eql (first term) 'λ))
+    ((lambda-p term)
      (list 'λ (plug-env (second term) env (1+ depth))))
     ((listp term)
      (list (plug-env (first term) env depth)
@@ -151,13 +150,11 @@ Supports:
   (loop with term = tree
         with stack = (list)
         with env = (list)
-        when (and (listp term)
-                  (eql (first term) 'λ)
+        when (and (lambda-p term)
                   stack) ;; Abstraction
           do (push (pop stack) env)
           and do (setf term (second term))
-        else when (and (listp term)
-                       (eql (first term) 'λ))
+        else when (lambda-p term)
                ;; FIXME: These last bits of env should be plugged
                ;; in, but they aren't somewhy.
                do (return (plug-env term env))
@@ -329,8 +326,7 @@ TYPE might be one of:
      (append (loop for i from term downto 0
                    collect 1)
              (list 0)))
-    ((and (listp term)
-          (eql 'λ (first term)))
+    ((lambda-p term)
      (append (list 0 0) (term->bit-list (second term))))
     ((listp term)
      (append (list 0 1)
