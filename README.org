@@ -2,9 +2,9 @@
 
 *cl-blc is a library and a CLI tool for working with Binary Lambda Calculus.*
 
-cl-blc ~read~-s, ~eval~-uates and (pretty-)-~print~-s Binary Lambda Calculus expressions. Also includes a CLI tool for compilation of BLC (both one-bit and eight-bit encoding) to standalone executables and running it interactively.
+cl-blc ~read~-s, ~eval~-uates and (pretty-) ~print~-s Binary Lambda Calculus expressions. Also includes a CLI tool for compilation of BLC (both one-bit and eight-bit encoding) to standalone executables and running it interactively.
 
-See
+See for more context:
 - https://tromp.github.io/cl/cl.html
 - https://justine.lol/lambda/
 
@@ -43,4 +43,4 @@ And then use it like
 
 * Examples
 
-See [[./source/package.lisp]] for usage examples.
+See [[./source/package.lisp]] and docstrings for usage examples.
