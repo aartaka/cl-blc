@@ -131,62 +131,46 @@ Supports:
 ;;   (:method ((tree integer))
 ;;     (make-instance 'reference :index tree)))
 
+(defun plug-env (term env &optional (depth 0))
+  (cond
+    ((and (listp term)
+          (eql (first term) 'λ))
+     (list 'λ (plug-env (second term) env (1+ depth))))
+    ((listp term)
+     (list (plug-env (first term) env depth)
+           (plug-env (second term) env depth)))
+    ((integerp term)
+     (if (>= term depth)
+         (first (elt env (- term depth)))
+         term))))
+
 (defgeneric eval (tree)
-  (:documentation "Technically, β-reduce.
-But it works in a typical eval/apply loop:
-- Take a TREE.
-- If it's an application, `eval' the first branch and `apply' it to
-  the `eval'uated second branch.
-- If it's a lambda, return it unchanged.
-- All the arguments (De-Brujin indices) are replaced with the
-  lambda/apply expressions in `apply', so there's no need for more
-  rules.")
+  (:documentation "Technically, β-reduce via Krivine machine.")
   (:method ((tree list))
-    (cond
-      ((eq (first tree) 'λ)
-       tree)
-      (t
-       (eval (apply (eval (first tree)) (eval (second tree))))))))
-
-(defgeneric replace (tree replacement &optional depth)
-  (:documentation "Replace all the De-Brujin indices equal to DEPTH with REPLACEMENT.
-Recursively, until all of the TREE is covered.")
-  (:method ((tree integer) (replacement list) &optional (depth 0))
-    (if (= depth tree)
-        replacement
-        tree))
-  (:method ((tree list) (replacement list) &optional (depth 0))
-    depth
-    (let ((first (first tree))
-          (second (second tree)))
-      (cond
-        ((eq first 'λ)
-         (list 'λ (replace second replacement (1+ depth))))
-        (t
-         (list
-          (typecase first
-            (integer
-             (if (= first depth)
-                 replacement
-                 first))
-            (list
-             (replace first replacement depth)))
-          (typecase second
-            (integer
-             (if (= second depth)
-                 replacement
-                 second))
-            (list
-             (replace second replacement depth)))))))))
-
-(defgeneric apply (function argument)
-  (:documentation "Apply FUNCTION to ARGUMENT.
-Traverses the FUNCTION body and `replace's all respective De-Brujin
-index occurrences with ARGUMENT.")
-  (:method ((function list) (argument list))
-    (if (eql (second function) 0)
-        argument
-        (replace (second function) argument))))
+    (loop with term = tree
+          with stack = (list)
+          with env = (list)
+          when (and (listp term)
+                    (eql (first term) 'λ)
+                    stack) ;; Abstraction
+            do (push (pop stack) env)
+            and do (setf term (second term))
+          else when (and (listp term)
+                         (eql (first term) 'λ))
+                 ;; FIXME: These last bits of env should be plugged
+                 ;; in, but they aren't somewhy.
+                 do (return (plug-env term env))
+          else when (listp term) ;; Application
+                 do (push (list (second term) env) stack)
+                 and do (setf term (first term))
+          else when (zerop term) ;; Zero
+                 do (destructuring-bind (new-term new-env)
+                        (pop env)
+                      (setf term new-term
+                            env new-env))
+          else when (plusp term) ;; Succ
+                 do (pop env)
+                 and do (decf term))))
 
 ;; TODO
 (defun tree-shake (term)
