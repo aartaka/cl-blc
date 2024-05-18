@@ -172,11 +172,6 @@ Supports:
                  do (pop env)
                  and do (decf term))))
 
-;; TODO
-(defun tree-shake (term)
-  "Try to η-normalize the TERM."
-  )
-
 (defgeneric compile (expr &optional stack)
   (:documentation "Compile Lispy EXPR into binary lambdas.
 
