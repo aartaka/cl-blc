@@ -102,46 +102,17 @@ Supports:
           (nthcdr (1+ (length ones))
                   (rest data))))))))
 
-;; (defclass base () ())
-;; (defclass abstraction (base)
-;;   ((body :accessor body
-;;          :type base
-;;          :initarg :body)))
-;; (defclass application ()
-;;   ((function :accessor function
-;;              :type base
-;;              :initarg :function)
-;;    (argument :accessor argument
-;;              :type base
-;;              :initarg :argument)))
-;; (defclass reference ()
-;;   ((index :accessor index
-;;           :type (or integer symbol)
-;;           :initarg :index)))
-
-;; (defgeneric dom-ify (tree)
-;;   (:documentation "Internal: turn lists into `base' and its children.
-;; Useful for `optimize' passes.")
-;;   (:method ((tree list))
-;;     (if (eq 'λ (first tree))
-;;         (make-instance 'abstraction :body (dom-ify (second tree)))
-;;         (make-instance 'application
-;;                        :function (dom-ify (first tree))
-;;                        :argument (dom-ify (second tree)))))
-;;   (:method ((tree integer))
-;;     (make-instance 'reference :index tree)))
-
 (defun plug-env (term env &optional (depth 0))
   (cond
-    ((lambda-p term)
-     (list 'λ (plug-env (second term) env (1+ depth))))
-    ((listp term)
-     (list (plug-env (first term) env depth)
-           (plug-env (second term) env depth)))
-    ((integerp term)
-     (if (>= term depth)
-         (first (elt env (- term depth)))
-         term))))
+   ((lambda-p term)
+    (list 'λ (plug-env (second term) env (1+ depth))))
+   ((listp term)
+    (list (plug-env (first term) env depth)
+          (plug-env (second term) env depth)))
+   ((integerp term)
+    (if (>= term depth)
+        (first (elt env (- term depth)))
+      term))))
 
 (deftermgeneric
     eval (tree)
