@@ -22,7 +22,7 @@ Also forces the docs, which is a virtue"
        (progn
          ,@list-case))))
 
-(defmacro destructuring-try ((&rest bindings) form &body body)
+(defmacro destructuring-when ((&rest bindings) form &body body)
   "Run BODY with BINDINGS to FORM result or return NIL when not matching."
   `(ignore-errors
     (destructuring-bind (,@bindings)
