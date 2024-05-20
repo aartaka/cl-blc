@@ -33,10 +33,16 @@ Also forces the docs, which is a virtue"
   (typecase tree
     (integer (when (funcall predicate tree)
                tree))
-    (list (if (lambda-p tree)
-              (tree-find-if predicate (second tree))
-              (or (tree-find-if predicate (first tree))
-                  (tree-find-if predicate (second tree)))))))
+    (symbol nil)
+    (list
+     (or
+      (when (funcall predicate tree)
+        tree)
+      (if (lambda-p tree)
+          (tree-find-if predicate (second tree))
+          (or
+           (tree-find-if predicate (first tree))
+           (tree-find-if predicate (second tree))))))))
 
 (defun closed-p (term &optional (depth 0))
   (typecase term

@@ -129,14 +129,17 @@ Supports:
                ;; Reduce the inner terms if closed. Not sure it's ever
                ;; called...
                do (return (loop with tree
-                                ;; FIXME: These last bits of env
-                                ;; should be plugged in, but they
-                                ;; aren't somewhy.
                                   = (plug-env term env)
                                 ;; TREE is a lambda, so only search its body.
-                                for maybe-closed = (tree-find-if (second tree) #'closed-p)
+                                for maybe-closed
+                                  = (tree-find-if #'(lambda (term)
+                                                      (and (listp term)
+                                                           (lambda-p (first term))
+                                                           (closed-p (first term))
+                                                           (closed-p (second term))))
+                                                  (second tree))
                                 while maybe-closed
-                                do (subst (eval maybe-closed) maybe-closed tree)
+                                do (setf tree (subst (eval maybe-closed) maybe-closed tree))
                                 finally (return tree)))
         else when (listp term) ;; Application
                do (push (list (second term) env) stack)
@@ -149,6 +152,7 @@ Supports:
         else when (plusp term) ;; Succ
                do (pop env)
                and do (decf term)))
+
 
 (defgeneric compile (expr &optional stack)
   (:documentation "Compile Lispy EXPR into binary lambdas.
