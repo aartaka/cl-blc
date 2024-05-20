@@ -35,17 +35,14 @@ Useful when inlining the form."
                           term
         (when (and (eq lam 'λ)
                    (= 1 (count-rec body 0)))
-          (labels ((subst-zero (thing subst depth)
-                     (typecase thing
-                       (integer (if (= thing depth)
-                                    subst
-                                    thing))
-                       (list (if (lambda-p thing)
-                                 (list 'λ (subst-zero (second thing) subst (1+ depth)))
-                                 (list (subst-zero (first thing) subst depth)
-                                       (subst-zero (second thing) subst depth)))))))
-            (eta-reduce
-             (subst-zero body arg 0)))))
+          (eta-reduce
+           (tree-transform-if
+            (lambda (x depth)
+              (equal x depth))
+            (lambda (x)
+              (declare (ignorable x))
+              arg)
+            body))))
       (when (lambda-p term)
         (list 'λ (eta-reduce (second term))))
       (list (eta-reduce (first term))

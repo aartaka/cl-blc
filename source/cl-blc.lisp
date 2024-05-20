@@ -104,15 +104,15 @@ Supports:
 
 (defun plug-env (term env &optional (depth 0))
   (cond
-   ((lambda-p term)
-    (list 'λ (plug-env (second term) env (1+ depth))))
-   ((listp term)
-    (list (plug-env (first term) env depth)
-          (plug-env (second term) env depth)))
-   ((integerp term)
-    (if (>= term depth)
-        (first (elt env (- term depth)))
-      term))))
+    ((lambda-p term)
+     (list 'λ (plug-env (second term) env (1+ depth))))
+    ((listp term)
+     (list (plug-env (first term) env depth)
+           (plug-env (second term) env depth)))
+    ((integerp term)
+     (if (>= term depth)
+         (first (elt env (- term depth)))
+         term))))
 
 (deftermgeneric
     eval (tree)
@@ -128,19 +128,18 @@ Supports:
         else when (lambda-p term)
                ;; Reduce the inner terms if closed. Not sure it's ever
                ;; called...
-               do (return (loop with tree
-                                  = (plug-env term env)
-                                ;; TREE is a lambda, so only search its body.
-                                for maybe-closed
-                                  = (tree-find-if #'(lambda (term)
-                                                      (and (listp term)
-                                                           (lambda-p (first term))
-                                                           (closed-p (first term))
-                                                           (closed-p (second term))))
-                                                  (second tree))
-                                while maybe-closed
-                                do (setf tree (subst (eval maybe-closed) maybe-closed tree))
-                                finally (return tree)))
+               do (return (let ((full (plug-env term env)))
+                            (subst (tree-transform-if
+                                    #'(lambda (term depth)
+                                        (declare (ignorable depth))
+                                        (and (listp term)
+                                             (lambda-p (first term))
+                                             (closed-p (first term))
+                                             (closed-p (second term))))
+                                    #'eval
+                                    (second full))
+                                   (second full)
+                                   full)))
         else when (listp term) ;; Application
                do (push (list (second term) env) stack)
                and do (setf term (first term))
@@ -152,7 +151,6 @@ Supports:
         else when (plusp term) ;; Succ
                do (pop env)
                and do (decf term)))
-
 
 (defgeneric compile (expr &optional stack)
   (:documentation "Compile Lispy EXPR into binary lambdas.
