@@ -38,7 +38,7 @@ Also forces the docs, which is a virtue"
                  (list
                   (or
                    (when (funcall predicate tree depth)
-                     (push tree to-subst))
+                     (push (list tree depth) to-subst))
                    (if (lambda-p tree)
                        (tree-find-if predicate (second tree) (1+ depth))
                        (progn
@@ -47,7 +47,8 @@ Also forces the docs, which is a virtue"
                          t)))))))
       (tree-find-if predicate tree depth))
     (reduce (lambda (acc form-to-subst)
-              (nsubst (funcall transformer form-to-subst) form-to-subst acc))
+              (nsubst (funcall transformer (first form-to-subst) (second form-to-subst))
+                      (first form-to-subst) acc))
             to-subst
             :initial-value tree)))
 
@@ -57,7 +58,8 @@ Also forces the docs, which is a virtue"
      (lambda (x depth)
        (declare (ignorable depth))
        (funcall predicate x))
-     (lambda (x)
+     (lambda (x depth)
+       (declare (ignorable depth))
        (return-from find x))
      tree)))
 

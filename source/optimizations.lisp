@@ -39,8 +39,8 @@ Useful when inlining the form."
            (tree-transform-if
             (lambda (x depth)
               (equal x depth))
-            (lambda (x)
-              (declare (ignorable x))
+            (lambda (x depth)
+              (declare (ignorable x depth))
               arg)
             body))))
       (when (lambda-p term)
@@ -75,3 +75,8 @@ Useful when inlining the form."
      (list 'λ (identity-reduce (second term))))
     (t (list (identity-reduce (first term))
              (identity-reduce (second term))))))
+
+(defmethod optimize (term)
+  (dead-reduce
+   (eta-reduce
+    (identity-reduce term))))

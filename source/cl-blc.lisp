@@ -114,11 +114,14 @@ Supports:
          (first (elt env (- term depth)))
          term))))
 
+(defgeneric optimize (term)
+  (:documentation "Optimize the TERM to be shorter and more correct."))
+
 (deftermgeneric
     eval (tree)
     "Technically, β-reduce via Krivine machine."
     (error "Something is wrong—eval should never be called on reference.")
-  (loop with term = tree
+  (loop with term = (optimize tree)
         with stack = (list)
         with env = (list)
         when (and (lambda-p term)
@@ -126,9 +129,9 @@ Supports:
           do (push (pop stack) env)
           and do (setf term (second term))
         else when (lambda-p term)
-               ;; Reduce the inner terms if closed. Not sure it's ever
-               ;; called...
-               do (return (let ((full (plug-env term env)))
+               ;; Reduce the inner terms if closed or single
+               ;; reference. Not sure it's ever called...
+               do (return (let ((full (optimize (plug-env (optimize term) env))))
                             (subst (tree-transform-if
                                     #'(lambda (term depth)
                                         (declare (ignorable depth))
@@ -136,7 +139,9 @@ Supports:
                                              (lambda-p (first term))
                                              (closed-p (first term))
                                              (closed-p (second term))))
-                                    #'eval
+                                    #'(lambda (x depth)
+                                        (declare (ignorable depth))
+                                        (optimize (eval x)))
                                     (second full))
                                    (second full)
                                    full)))
