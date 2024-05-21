@@ -34,7 +34,7 @@ Also forces the docs, which is a virtue"
     (labels ((tree-find-if (predicate tree depth)
                (typecase tree
                  (integer (when (funcall predicate tree depth)
-                            (push tree to-subst)))
+                            (push (list tree depth) to-subst)))
                  (list
                   (or
                    (when (funcall predicate tree depth)
