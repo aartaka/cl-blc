@@ -121,7 +121,7 @@ Supports:
     eval (tree)
     "Technically, β-reduce via Krivine machine."
     (error "Something is wrong—eval should never be called on reference.")
-  (loop with term = (optimize tree)
+  (loop with term = tree
         with stack = (list)
         with env = (list)
         when (and (lambda-p term)
@@ -131,7 +131,7 @@ Supports:
         else when (lambda-p term)
                ;; Reduce the inner terms if closed or single
                ;; reference. Not sure it's ever called...
-               do (return (let ((full (optimize (plug-env (optimize term) env))))
+               do (return (let ((full (plug-env term env)))
                             (subst (tree-transform-if
                                     #'(lambda (term depth)
                                         (declare (ignorable depth))
@@ -141,7 +141,7 @@ Supports:
                                              (closed-p (second term))))
                                     #'(lambda (x depth)
                                         (declare (ignorable depth))
-                                        (optimize (eval x)))
+                                        (eval x))
                                     (second full))
                                    (second full)
                                    full)))
