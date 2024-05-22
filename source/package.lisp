@@ -43,4 +43,9 @@ For instance, IR for TRUE is:
 (compile t)
 ;; => (Λ (Λ 1))
 
-See the docstrings of the exported functions for usage examples."))
+See the docstrings of the exported functions for usage examples.
+But here's one to tease you:
+(coerce (eval (list (read #p\"~/git/cl-blc/example/first.blc\")
+                    (compile '('(3 2 1)))))
+        'number)
+;; => 3"))
