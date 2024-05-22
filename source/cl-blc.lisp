@@ -102,6 +102,22 @@ Supports:
           (nthcdr (1+ (length ones))
                   (rest data))))))))
 
+(defun %eval (term &optional env)
+  "Recursive/procedural CEK machine reference implementation (Wikipedia.)"
+  (typecase term
+    (integer (elt env term))
+    (cons
+     (cond
+       ((lambda-p term)
+        (values term env))
+       (t
+        (multiple-value-bind (fn new-env)
+            (%eval (first term) env)
+          (apply fn (%eval (second term) env) new-env)))))))
+
+(defun apply (fn arg env)
+  (%eval (second fn) (cons arg env)))
+
 (defun plug-env (term env &optional (depth 0))
   (cond
     ((lambda-p term)
@@ -110,52 +126,17 @@ Supports:
      (list (plug-env (first term) env depth)
            (plug-env (second term) env depth)))
     ((integerp term)
-     (if (>= term depth)
-         (first (elt env (- term depth)))
-         term))))
+     (if (< term depth)
+         term
+         (elt env (- term depth))))))
+
+(defun eval (term)
+  (multiple-value-bind (term env)
+      (%eval term)
+    (plug-env term env)))
 
 (defgeneric optimize (term)
   (:documentation "Optimize the TERM to be shorter and more correct."))
-
-(deftermgeneric
-    eval (tree)
-    "Technically, β-reduce via Krivine machine."
-    (error "Something is wrong—eval should never be called on reference.")
-  (loop with term = tree
-        with stack = (list)
-        with env = (list)
-        when (and (lambda-p term)
-                  stack) ;; Abstraction
-          do (push (pop stack) env)
-          and do (setf term (second term))
-        else when (lambda-p term)
-               ;; Reduce the inner terms if closed or single
-               ;; reference. Not sure it's ever called...
-               do (return (let ((full (plug-env term env)))
-                            (subst (tree-transform-if
-                                    #'(lambda (term depth)
-                                        (declare (ignorable depth))
-                                        (and (listp term)
-                                             (lambda-p (first term))
-                                             (closed-p (first term))
-                                             (closed-p (second term))))
-                                    #'(lambda (x depth)
-                                        (declare (ignorable depth))
-                                        (eval x))
-                                    (second full))
-                                   (second full)
-                                   full)))
-        else when (listp term) ;; Application
-               do (push (list (second term) env) stack)
-               and do (setf term (first term))
-        else when (zerop term) ;; Zero
-               do (destructuring-bind (new-term new-env)
-                      (pop env)
-                    (setf term new-term
-                          env new-env))
-        else when (plusp term) ;; Succ
-               do (pop env)
-               and do (decf term)))
 
 (defgeneric compile (expr &optional stack)
   (:documentation "Compile Lispy EXPR into binary lambdas.

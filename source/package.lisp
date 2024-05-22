@@ -7,6 +7,7 @@
   (:shadow #:read
            #:optimize
            #:eval
+           #:apply
            #:compile
            #:coerce
            #:write
