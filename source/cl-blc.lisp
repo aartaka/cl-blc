@@ -206,87 +206,95 @@ TYPE might be one of:
 - INTEGER/NUMBER: Churn numeral -> integer.
 - CHARACTER: Standard character (uses NUMBER method).
 - CONS/LIST: Convert to list of INNER-TYPE with last cdr of FINAL-TYPE.
-- STRING: A valid string (uses LIST method).")
-  (:method ((term list) (type (eql 'boolean)) &optional inner-type final-type)
-    (declare (ignorable inner-type final-type))
-    (cond
-      ((equal '(λ (λ 1)) term)
-       t)
-      ((equal '(λ (λ 0)) term)
-       nil)
-      (t term)))
-  (:method ((term list) (type (eql 'integer)) &optional inner-type final-type)
-    (declare (ignorable inner-type final-type))
-    (or (ignore-errors
-         (loop with tail = (cadadr term)
-               while (and (eql 1 (first tail))
-                          (listp (second tail)))
-               count 1 into num
-               do (setf tail (second tail))
-               finally (return (if (and (listp tail)
-                                        (eql 1 (first tail))
-                                        (eql 0 (second tail)))
-                                   (1+ num)
-                                   nil))))
-        term))
-  (:method ((term list) (type (eql 'number)) &optional inner-type final-type)
-    (declare (ignorable inner-type final-type))
-    (coerce term 'integer))
-  (:method ((term list) (type (eql 'character)) &optional inner-type final-type)
-    (declare (ignorable inner-type final-type))
-    (code-char (coerce term 'integer)))
-  (:method ((term list) (type (eql 'cons)) &optional inner-type final-type)
-    ;; Manage full term (with lambda in the front) instead?
-    (or (ignore-errors
-         (loop with cons = term
-               while (and (listp (cadr cons))
-                          (listp (caadr cons))
-                          (eql 0 (caaadr cons)))
-               collect (if inner-type
-                           (coerce (car (cdaadr cons)) inner-type)
-                           (car (cdaadr cons)))
-                 into elems
-               do (setf cons (cadadr cons))
-               finally (if (equal '(λ (λ 0)) cons)
-                           (return elems)
-                           (progn
-                             (setf (cdr (last elems))
-                                   (cond
-                                     (final-type (coerce cons final-type))
-                                     (inner-type (coerce cons inner-type))
-                                     (t cons)))
-                             (return elems)))))
-        term))
-  (:method ((term list) (type (eql 'list)) &optional inner-type final-type)
-    (coerce term 'cons inner-type final-type))
-  (:method ((term list) (type (eql 'string)) &optional inner-type final-type)
-    (declare (ignorable inner-type final-type))
-    (cl:coerce (coerce term 'cons 'character)
-               'string))
-  (:method ((term list) (type (eql t)) &optional inner-type final-type)
-    (declare (ignorable inner-type final-type))
-    (flet ((try-convert (term type)
-             (let ((converted (coerce term type)))
-               (if (eq converted term)
-                   nil
-                   converted))))
-      (or (try-convert term 'boolean)
-          (try-convert term 'integer)
-          (let* ((cons-convert (try-convert term 'cons)))
-            (when cons-convert
-              (loop for elem in cons-convert
-                    for bool = (coerce elem 'boolean)
-                    for int = (coerce elem 'integer)
-                    when (not (equal bool elem))
-                      collect bool
-                    else when (not (equal int elem))
-                           collect int
-                    else
-                      collect elem)))
-          term)))
+- STRING: A valid string (uses LIST off CHARACTERs method).")
   (:method ((term list) (type null) &optional inner-type final-type)
     (declare (ignorable inner-type final-type))
     (coerce term t)))
+
+(defmethod coerce ((term list) (type (eql 'boolean)) &optional inner-type final-type)
+  (declare (ignorable inner-type final-type))
+  (cond
+    ((equal '(λ (λ 1)) term)
+     t)
+    ((equal '(λ (λ 0)) term)
+     nil)
+    (t term)))
+
+(defmethod coerce ((term list) (type (eql 'integer)) &optional inner-type final-type)
+  (declare (ignorable inner-type final-type))
+  (or (ignore-errors
+       (loop with tail = (cadadr term)
+             while (and (eql 1 (first tail))
+                        (listp (second tail)))
+             count 1 into num
+             do (setf tail (second tail))
+             finally (return (if (and (listp tail)
+                                      (eql 1 (first tail))
+                                      (eql 0 (second tail)))
+                                 (1+ num)
+                                 nil))))
+      term))
+
+(defmethod coerce ((term list) (type (eql 'number)) &optional inner-type final-type)
+  (declare (ignorable inner-type final-type))
+  (coerce term 'integer))
+
+(defmethod coerce ((term list) (type (eql 'character)) &optional inner-type final-type)
+  (declare (ignorable inner-type final-type))
+  (code-char (coerce term 'integer)))
+
+(defmethod coerce ((term list) (type (eql 'cons)) &optional inner-type final-type)
+  ;; Manage full term (with lambda in the front) instead?
+  (or (ignore-errors
+       (loop with cons = term
+             while (and (listp (cadr cons))
+                        (listp (caadr cons))
+                        (eql 0 (caaadr cons)))
+             collect (if inner-type
+                         (coerce (car (cdaadr cons)) inner-type)
+                         (car (cdaadr cons)))
+               into elems
+             do (setf cons (cadadr cons))
+             finally (if (equal '(λ (λ 0)) cons)
+                         (return elems)
+                         (progn
+                           (setf (cdr (last elems))
+                                 (cond
+                                   (final-type (coerce cons final-type))
+                                   (inner-type (coerce cons inner-type))
+                                   (t cons)))
+                           (return elems)))))
+      term))
+
+(defmethod coerce ((term list) (type (eql 'list)) &optional inner-type final-type)
+  (coerce term 'cons inner-type final-type))
+
+(defmethod coerce ((term list) (type (eql 'string)) &optional inner-type final-type)
+  (declare (ignorable inner-type final-type))
+  (cl:coerce (coerce term 'cons 'character)
+             'string))
+
+(defmethod coerce ((term list) (type (eql t)) &optional inner-type final-type)
+  (declare (ignorable inner-type final-type))
+  (flet ((try-convert (term type)
+           (let ((converted (coerce term type)))
+             (if (eq converted term)
+                 nil
+                 converted))))
+    (or (try-convert term 'boolean)
+        (try-convert term 'integer)
+        (let* ((cons-convert (try-convert term 'cons)))
+          (when cons-convert
+            (loop for elem in cons-convert
+                  for bool = (coerce elem 'boolean)
+                  for int = (coerce elem 'integer)
+                  when (not (equal bool elem))
+                    collect bool
+                  else when (not (equal int elem))
+                         collect int
+                  else
+                    collect elem)))
+        term)))
 
 (defun term->bit-list (term)
   (cond
