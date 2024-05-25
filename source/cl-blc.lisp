@@ -102,6 +102,7 @@ Supports:
           (nthcdr (1+ (length ones))
                   (rest data))))))))
 
+;; TODO: Iterative version and hash-table-based env?
 (defun %eval (term &optional env)
   "Recursive/procedural CEK machine reference implementation (Wikipedia.)"
   (typecase term
@@ -146,7 +147,7 @@ Integers: (compile '(1)) => (λ (λ (1 0)))
 Booleans: (compile '(t)) => (λ (λ 1))
 Characters: (compile '(#\Tab)) => (λ (λ (1 (1 (1 (1 (1 (1 (1 (1 (1 0)))))))))))
 Strings: (compile '(\"hi\")) => You have to believe me on this one
-Quoted lists of the above: (compile '('(t))) => And this too
+Quoted lists of the above: (compile '('(t))) => (λ ((0 (λ (λ 1))) (λ (λ 0))))
 
 All the compilation is reversible with `coerce', given the right type.")
   (:method ((expr list) &optional stack)
