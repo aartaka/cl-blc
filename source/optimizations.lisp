@@ -27,26 +27,32 @@ Useful when inlining the form."
          (count-rec (second term) depth))))
 
 (deftermgeneric
-    eta-reduce (term)
+    eta+-reduce (term)
     "Try to η-reduce (de-alias) the TERM.
-(Λ (X 0)) Y => (X Y)"
+(Λ (X 0)) Y => (X Y)
+
+Also does more powerful extensions of the same idea."
     term
   (or (destructuring-when ((lam body) arg)
                           term
         (when (and (eq lam 'λ)
-                   (= 1 (count-rec body 0)))
-          (eta-reduce
+                   (= 1 (count-rec body 0))
+                   (or (integerp arg)
+                       (closed-p arg)))
+          (eta+-reduce
            (tree-transform-if
             (lambda (x depth)
               (equal x depth))
             (lambda (x depth)
               (declare (ignorable x depth))
-              arg)
+              (typecase arg
+                (integer (+ arg depth))
+                (list arg)))
             body))))
       (when (lambda-p term)
-        (list 'λ (eta-reduce (second term))))
-      (list (eta-reduce (first term))
-            (eta-reduce (second term)))
+        (list 'λ (eta+-reduce (second term))))
+      (list (eta+-reduce (first term))
+            (eta+-reduce (second term)))
       term))
 
 (deftermgeneric
@@ -64,19 +70,5 @@ Useful when inlining the form."
       (list (dead-reduce (first term))
             (dead-reduce (second term)))))
 
-(deftermgeneric
-    identity-reduce (term)
-    "Reduce the TERM if it's just an identity application."
-    term
-  (cond
-    ((equal '(λ 0) (first term))
-     (identity-reduce (second term)))
-    ((eq 'λ (first term))
-     (list 'λ (identity-reduce (second term))))
-    (t (list (identity-reduce (first term))
-             (identity-reduce (second term))))))
-
 (defmethod optimize (term)
-  (dead-reduce
-   (eta-reduce
-    (identity-reduce term))))
+  (eta+-reduce (dead-reduce (eta+-reduce term))))
