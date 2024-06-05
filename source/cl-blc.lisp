@@ -106,7 +106,7 @@ Supports:
 (defun %eval (term &optional env)
   "Recursive/procedural CEK machine reference implementation (Wikipedia.)"
   (typecase term
-    (integer (elt env term))
+    (integer (values (elt env term) env))
     (cons
      (cond
        ((lambda-p term)
@@ -354,12 +354,12 @@ In the absence of the above, print ones and zeros for TERM.")
           (get-output-stream-string stream)
           (values)))))
 
-(defgeneric print (term stream)
+(defgeneric print (term &optional (stream t))
   (:documentation "Print the literal (like (Λ (Λ 1))) BLC representation of the TERM to STREAM.")
   (:method ((term list) stream)
     (write term :stream stream :literal t)))
 
-(defgeneric princ (term stream)
+(defgeneric princ (term &optional (stream t))
   (:documentation "Print the prettified (converted to Lisp whenever possible) TERM to STREAM.")
   (:method ((term list) stream)
     (write term :stream stream :pretty t)))
