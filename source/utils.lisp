@@ -30,27 +30,19 @@ Also forces the docs, which is a virtue"
       ,@body)))
 
 (defun tree-transform-if (predicate transformer tree &optional (depth 0))
-  (let ((to-subst nil))
-    (labels ((tree-find-if (predicate tree depth)
-               (typecase tree
-                 (integer (when (funcall predicate tree depth)
-                            (push (list tree depth) to-subst)))
-                 (list
-                  (or
-                   (when (funcall predicate tree depth)
-                     (push (list tree depth) to-subst))
-                   (if (lambda-p tree)
-                       (tree-find-if predicate (second tree) (1+ depth))
-                       (progn
-                         (tree-find-if predicate (first tree) depth)
-                         (tree-find-if predicate (second tree) depth)
-                         t)))))))
-      (tree-find-if predicate tree depth))
-    (reduce (lambda (acc form-to-subst)
-              (nsubst (funcall transformer (first form-to-subst) (second form-to-subst))
-                      (first form-to-subst) acc))
-            to-subst
-            :initial-value tree)))
+  (typecase tree
+    (integer (if (funcall predicate tree depth)
+                 (funcall transformer tree depth)
+                 tree))
+    (list
+     (or
+      (when (funcall predicate tree depth)
+        (funcall transformer tree depth))
+      (if (lambda-p tree)
+          (list 'λ (tree-transform-if predicate transformer (second tree) (1+ depth)))
+          (list
+           (tree-transform-if predicate transformer (first tree) depth)
+           (tree-transform-if predicate transformer (second tree) depth)))))))
 
 (defun tree-find-if (predicate tree)
   (block find
