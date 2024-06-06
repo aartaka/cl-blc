@@ -161,8 +161,8 @@ All the compilation is reversible with `coerce', given the right type.")
                    (compile nil))))
       (convert (cl:coerce expr 'list)))))
 
-(defgeneric coerce (term type &optional inner-type final-type)
-  (:documentation "Try converting the TERM to a Lisp TYPE.
+(define-generic coerce ((term list) (type null) &optional inner-type final-type)
+  "Try converting the TERM to a Lisp TYPE.
 In case of success, return the respective TYPEd value.
 In case of failure, return the TERM unaltered.
 TYPE might be one of:
@@ -170,10 +170,9 @@ TYPE might be one of:
 - INTEGER/NUMBER: Churn numeral -> integer.
 - CHARACTER: Standard character (uses NUMBER method).
 - CONS/LIST: Convert to list of INNER-TYPE with last cdr of FINAL-TYPE.
-- STRING: A valid string (uses LIST off CHARACTERs method).")
-  (:method ((term list) (type null) &optional inner-type final-type)
-    (declare (ignorable inner-type final-type))
-    (coerce term t)))
+- STRING: A valid string (uses LIST off CHARACTERs method)."
+  (declare (ignorable inner-type final-type))
+  (coerce term t))
 
 (defmethod coerce ((term list) (type (eql 'boolean)) &optional inner-type final-type)
   (declare (ignorable inner-type final-type))
@@ -273,56 +272,53 @@ TYPE might be one of:
              (term->bit-list (first term))
              (term->bit-list (second term))))))
 
-(defgeneric write (term &key stream pretty binary literal)
-  (:documentation "Write the `read' or `compile'd TERM to STREAM.
+(define-generic write ((term list) &key (stream t) (literal nil) (pretty nil) (binary nil))
+  "Write the `read' or `compile'd TERM to STREAM.
 If PRETTY, try to convert TERM to number, list, or string.
 When BINARY, write raw bytes instead of one & zero chars.
 When literal, print the IR for the TERM.
-In the absence of the above, print ones and zeros for TERM.")
-  (:method ((term list) &key (stream t) (literal nil) (pretty nil) (binary nil))
-    (let ((initial-stream stream)
-          (stream (etypecase stream
-                    ((eql t) *standard-output*)
-                    (null (make-string-output-stream
-                           :element-type (if binary
-                                             '(unsigned-byte 8)
-                                             'character)))
-                    (stream stream))))
-      (cond
-        (binary
-         (loop for (one two three four five six seven eight . rest)
-                 on (term->bit-list term) by (lambda (bits)
-                                               (nthcdr 8 bits))
-               while one
-               do (write-byte (+ (ash one 8)
-                                 (ash (or two 0) 7)
-                                 (ash (or three 0) 6)
-                                 (ash (or four 0) 5)
-                                 (ash (or five 0) 4)
-                                 (ash (or six 0) 3)
-                                 (ash (or seven 0) 2)
-                                 (or eight 0))
-                              stream)))
-        (pretty
-         (cl:write (coerce term t) :stream stream
-                                   :escape t :circle nil :readably t
-                                   :level nil :length nil :right-margin nil))
-        (literal
-         (cl:write term :stream stream
-                        :escape t :circle nil :readably t
-                        :level nil :length nil :right-margin nil))
-        (t (loop for bit in (term->bit-list term)
-                 do (format stream "~d" bit))))
-      (if (null initial-stream)
-          (get-output-stream-string stream)
-          (values)))))
+In the absence of the above, print ones and zeros for TERM."
+  (let ((initial-stream stream)
+        (stream (etypecase stream
+                  ((eql t) *standard-output*)
+                  (null (make-string-output-stream
+                         :element-type (if binary
+                                           '(unsigned-byte 8)
+                                           'character)))
+                  (stream stream))))
+    (cond
+      (binary
+       (loop for (one two three four five six seven eight . rest)
+               on (term->bit-list term) by (lambda (bits)
+                                             (nthcdr 8 bits))
+             while one
+             do (write-byte (+ (ash one 8)
+                               (ash (or two 0) 7)
+                               (ash (or three 0) 6)
+                               (ash (or four 0) 5)
+                               (ash (or five 0) 4)
+                               (ash (or six 0) 3)
+                               (ash (or seven 0) 2)
+                               (or eight 0))
+                            stream)))
+      (pretty
+       (cl:write (coerce term t) :stream stream
+                                 :escape t :circle nil :readably t
+                                 :level nil :length nil :right-margin nil))
+      (literal
+       (cl:write term :stream stream
+                      :escape t :circle nil :readably t
+                      :level nil :length nil :right-margin nil))
+      (t (loop for bit in (term->bit-list term)
+               do (format stream "~d" bit))))
+    (if (null initial-stream)
+        (get-output-stream-string stream)
+        (values))))
 
-(defgeneric print (term &optional (stream t))
-  (:documentation "Print the literal (like (Λ (Λ 1))) BLC representation of the TERM to STREAM.")
-  (:method ((term list) stream)
-    (write term :stream stream :literal t)))
+(define-generic print ((term list) &optional (stream t))
+  "Print the literal (like (Λ (Λ 1))) BLC representation of the TERM to STREAM."
+  (write term :stream stream :literal t))
 
-(defgeneric princ (term &optional (stream t))
-  (:documentation "Print the prettified (converted to Lisp whenever possible) TERM to STREAM.")
-  (:method ((term list) stream)
-    (write term :stream stream :pretty t)))
+(define-generic princ ((term list) &optional (stream t))
+  "Print the prettified (converted to Lisp whenever possible) TERM to STREAM."
+  (write term :stream stream :pretty t))

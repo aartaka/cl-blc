@@ -7,6 +7,12 @@
   (and (listp term)
        (eq 'λ (first term))))
 
+(defmacro define-generic (name (&rest args) &body (documentation . body))
+  `(defgeneric ,name (,@(mapcar #'first (mapcar #'uiop:ensure-list args)))
+     (:documentation ,documentation)
+     (:method (,@args)
+       ,@body)))
+
 (defmacro deftermgeneric (name (term-var &rest args)
                           documentation integer-case &body list-case)
   "Abstract away the frequent pattern of
