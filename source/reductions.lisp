@@ -70,5 +70,43 @@ Also does more powerful extensions of the same idea."
       (list (dead-reduce (first term))
             (dead-reduce (second term)))))
 
-(defmethod optimize (term)
-  (eta+-reduce (dead-reduce (eta+-reduce term))))
+;; TODO: Iterative version and hash-table-based env?
+(defun %beta-reduce (term &optional env)
+  "Recursive/procedural CEK machine reference implementation (Wikipedia.)"
+  (typecase term
+    (integer (values (elt env term) env))
+    (cons
+     (cond
+       ((lambda-p term)
+        (values term env))
+       (t
+        (multiple-value-bind (fn new-env)
+            (%beta-reduce (first term) env)
+          (apply fn (%beta-reduce (second term) env) new-env)))))))
+
+(defun apply (fn arg env)
+  (%beta-reduce (second fn) (cons arg env)))
+
+(defun plug-env (term env &optional (depth 0))
+  (cond
+    ((lambda-p term)
+     (list 'λ (plug-env (second term) env (1+ depth))))
+    ((listp term)
+     (list (plug-env (first term) env depth)
+           (plug-env (second term) env depth)))
+    ((integerp term)
+     (if (< term depth)
+         term
+         (elt env (- term depth))))))
+
+(defun beta-reduce (term)
+  (multiple-value-bind (term env)
+      (%beta-reduce term)
+    (tree-transform-if
+     (lambda (x d)
+       (declare (ignorable d))
+       (closed-p x))
+     (lambda (x d)
+       (declare (ignorable d))
+       (%beta-reduce x))
+     (plug-env term env))))
