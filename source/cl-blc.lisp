@@ -141,8 +141,6 @@ Supports:
        (%eval x))
      (plug-env term env))))
 
-(optimize '((Λ (Λ (1 (1 0)))) (Λ 0)))
-
 (defgeneric optimize (term)
   (:documentation "Optimize the TERM to be shorter and more correct."))
 
