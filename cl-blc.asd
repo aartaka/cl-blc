@@ -20,8 +20,8 @@
                 :components
                 ((:file "package")
                  (:file "utils")
-                 (:file "cl-blc")
                  (:file "reductions")
+                 (:file "cl-blc")
                  (:file "cli"))))
   :in-order-to ((test-op (test-op "cl-blc/tests"))))
 
