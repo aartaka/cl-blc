@@ -102,6 +102,17 @@ Supports:
           (nthcdr (1+ (length ones))
                   (rest data))))))))
 
+(define-generic eval ((term cons))
+  "Evaluate TERM with all the available reductions.
+Reduces until there's nothing to reduce."
+  (loop for form = term
+          then (dead-reduce
+                (eta+-reduce
+                 (beta-reduce form)))
+          and prev = form
+        until (equal prev form)
+        finally (return form)))
+
 (defgeneric compile (expr &optional stack)
   (:documentation "Compile Lispy EXPR into binary lambdas.
 
