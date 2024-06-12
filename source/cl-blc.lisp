@@ -106,9 +106,10 @@ Supports:
   "Evaluate TERM with all the available reductions.
 Reduces until there's nothing to reduce."
   (loop for form = term
-          then (dead-reduce
-                (eta+-reduce
-                 (beta-reduce form)))
+          then (neighbor-reduce
+                (dead-reduce
+                 (eta+-reduce
+                  (beta-reduce form))))
           and prev = form
         until (equal prev form)
         finally (return form)))
