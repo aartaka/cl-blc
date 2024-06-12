@@ -59,7 +59,8 @@ Also forces the docs, which is a virtue"
      (lambda (x depth)
        (declare (ignorable depth))
        (return-from find x))
-     tree)))
+     tree)
+    nil))
 
 (defun closed-p (term &optional (depth 0))
   (typecase term
