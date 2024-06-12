@@ -80,6 +80,7 @@ Also does more powerful extensions of the same idea."
         (when (and (eq lam 'λ)
                    ;; (integerp arg)
                    (not (lambda-p arg))
+                   (not (closed-p (list lam body)))
                    (not (tree-find-if #'lambda-p arg)))
           (tree-transform-if
            (lambda (x depth)
