@@ -73,7 +73,7 @@ Also does more powerful extensions of the same idea."
 
 (deftermgeneric
     neighbor-reduce (term)
-    "(Λ (Λ ...)) Y => (Λ ...[1=Y])"
+    "(Λ ...) Y (non-lambda) => (...[0=Y])"
     term
   (or (destructuring-when ((lam body) arg)
                           term
