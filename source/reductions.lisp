@@ -36,6 +36,7 @@ Also does more powerful extensions of the same idea."
   (or (destructuring-when ((lam body) arg)
                           term
         (when (and (eq lam 'λ)
+                   (closed-p (list lam body))
                    (= 1 (count-rec body 0))
                    (or (integerp arg)
                        (closed-p arg)))
@@ -69,6 +70,39 @@ Also does more powerful extensions of the same idea."
         (list 'λ (dead-reduce (second term))))
       (list (dead-reduce (first term))
             (dead-reduce (second term)))))
+
+(deftermgeneric
+    neighbor-reduce (term)
+    "(Λ (Λ ...)) Y => (Λ ...[1=Y])"
+    term
+  (or (destructuring-when ((lam body) arg)
+                          term
+        (when (and (eq lam 'λ)
+                   ;; (integerp arg)
+                   (not (lambda-p arg))
+                   (not (tree-find-if #'lambda-p arg)))
+          (tree-transform-if
+           (lambda (x depth)
+             (and (integerp x)
+                  (>= x depth)))
+           (lambda (x outer-depth)
+             (declare (ignorable x))
+             ;; Necessary to downgrade the outer scope catching ones.
+             (if (> x outer-depth)
+                 (1- x)
+                 (tree-transform-if
+                  (lambda (x d)
+                    (declare (ignorable d))
+                    (integerp x))
+                  (lambda (x d)
+                    (declare (ignorable d))
+                    (+ outer-depth x))
+                  arg)))
+           body)))
+      (when (lambda-p term)
+        (list 'λ (neighbor-reduce (second term))))
+      (list (neighbor-reduce (first term))
+            (neighbor-reduce (second term)))))
 
 ;; TODO: Iterative version and hash-table-based env?
 (defun %beta-reduce (term &optional env)
