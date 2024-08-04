@@ -105,43 +105,62 @@ Also does more powerful extensions of the same idea."
       (list (neighbor-reduce (first term))
             (neighbor-reduce (second term)))))
 
-;; TODO: Iterative version and hash-table-based env?
-(defun %beta-reduce (term &optional env)
-  "Recursive/procedural CEK machine reference implementation (Wikipedia.)"
-  (typecase term
-    (integer (values (elt env term) env))
-    (cons
-     (cond
-       ((lambda-p term)
-        (values term env))
-       (t
-        (multiple-value-bind (fn new-env)
-            (%beta-reduce (first term) env)
-          (apply fn (%beta-reduce (second term) env) new-env)))))))
-
-(defun apply (fn arg env)
-  (%beta-reduce (second fn) (cons arg env)))
-
-(defun plug-env (term env &optional (depth 0))
+(defun named-transform (term &optional (env '()))
   (cond
     ((lambda-p term)
-     (list 'λ (plug-env (second term) env (1+ depth))))
-    ((listp term)
-     (list (plug-env (first term) env depth)
-           (plug-env (second term) env depth)))
+     (let ((name (gensym)))
+       (list 'λ name (named-transform (body term) (cons name env)))))
     ((integerp term)
-     (if (< term depth)
-         term
-         (elt env (- term depth))))))
+     (nth term env))
+    (t
+     (list (named-transform (first term) env)
+           (named-transform (second term) env)))))
+
+(defun unnamed-transform (named-term &optional (env '()))
+  (cond
+    ((lambda-p named-term)
+     (list 'λ (unnamed-transform (body named-term)
+                                 (cons (second named-term) env))))
+    ((symbolp named-term)
+     (position named-term env))
+    ((listp named-term)
+     (list (unnamed-transform (first named-term) env)
+           (unnamed-transform (second named-term) env)))))
+
+(defun %plug-env (named-term env)
+  (loop for (symbol . value) in (reverse env)
+        for term = (subst value symbol named-term)
+          then (subst value symbol term)
+        finally (return (or term named-term))))
+
+(defun %beta-reduce (named-term &optional (env '()))
+  (cond
+    ((lambda-p named-term)
+     (%plug-env named-term env))
+    ((symbolp named-term)
+     (%plug-env
+      (cdr (assoc named-term env))
+      env))
+    ((listp named-term)
+     (let ((fn (%plug-env (%beta-reduce (first named-term)) env)))
+       (cond
+         ((lambda-p fn)
+          (%beta-reduce (body fn)
+                        (cons (cons (second fn) (%beta-reduce (second named-term)))
+                              env)))
+         ((symbolp fn)
+          (%beta-reduce (cdr (assoc named-term env))
+                        env)))))))
 
 (defun beta-reduce (term)
-  (multiple-value-bind (term env)
-      (%beta-reduce term)
-    (tree-transform-if
-     (lambda (x d)
-       (declare (ignorable d))
-       (closed-p x))
-     (lambda (x d)
-       (declare (ignorable d))
-       (%beta-reduce x))
-     (plug-env term env))))
+  (tree-transform-if
+   (lambda (x d)
+     (declare (ignorable d))
+     (closed-p x))
+   (lambda (x d)
+     (declare (ignorable d))
+     (unnamed-transform
+      (%beta-reduce
+       (named-transform x))))
+   (unnamed-transform
+    (%beta-reduce (named-transform term)))))

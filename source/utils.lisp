@@ -35,6 +35,9 @@ Also forces the docs, which is a virtue"
         ,form
       ,@body)))
 
+(defun body (term)
+  (car (last term)))
+
 (defun tree-transform-if (predicate transformer tree &optional (depth 0))
   (typecase tree
     (integer (if (funcall predicate tree depth)
@@ -45,7 +48,7 @@ Also forces the docs, which is a virtue"
       (when (funcall predicate tree depth)
         (funcall transformer tree depth))
       (if (lambda-p tree)
-          (list 'λ (tree-transform-if predicate transformer (second tree) (1+ depth)))
+          (list 'λ (tree-transform-if predicate transformer (body tree) (1+ depth)))
           (list
            (tree-transform-if predicate transformer (first tree) depth)
            (tree-transform-if predicate transformer (second tree) depth)))))))
@@ -69,7 +72,7 @@ Also forces the docs, which is a virtue"
     (list
      (cond
        ((lambda-p term)
-        (closed-p (second term) (1+ depth)))
+        (closed-p (body term) (1+ depth)))
        (t
         (and (closed-p (first term) depth)
              (closed-p (second term) depth)))))))
