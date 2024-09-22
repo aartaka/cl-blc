@@ -122,7 +122,7 @@ Also does more powerful extensions of the same idea."
      (list 'λ (unnamed-transform (body named-term)
                                  (cons (second named-term) env))))
     ((symbolp named-term)
-     (position named-term env))
+     (position named-term env :test #'string-equal))
     ((listp named-term)
      (list (unnamed-transform (first named-term) env)
            (unnamed-transform (second named-term) env)))))
