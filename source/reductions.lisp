@@ -133,24 +133,27 @@ Also does more powerful extensions of the same idea."
           then (subst value symbol term)
         finally (return (or term named-term))))
 
-(defun %beta-reduce (named-term &optional (env '()))
+(defun assoc-env (x env)
+  (loop for binding = (cdr (assoc x env))
+          then (cdr (assoc binding env))
+        until (listp binding)
+        finally (return binding)))
+
+(defvar *env* '())
+(defun %beta-reduce (named-term)
   (cond
     ((lambda-p named-term)
-     (%plug-env named-term env))
+     (%plug-env named-term *env*))
     ((symbolp named-term)
-     (%plug-env
-      (cdr (assoc named-term env))
-      env))
+     (%plug-env (assoc-env named-term *env*) *env*))
     ((listp named-term)
-     (let ((fn (%plug-env (%beta-reduce (first named-term)) env)))
-       (cond
-         ((lambda-p fn)
-          (%beta-reduce (body fn)
-                        (cons (cons (second fn) (%beta-reduce (second named-term)))
-                              env)))
-         ((symbolp fn)
-          (%beta-reduce (cdr (assoc named-term env))
-                        env)))))))
+     (let* ((fn (%plug-env (%beta-reduce (first named-term)) *env*))
+            (fn (if (symbolp fn)
+                    (assoc-env fn *env*)
+                    fn))
+            (*env* (cons (cons (second fn) (%beta-reduce (second named-term)))
+                         *env*)))
+       (%beta-reduce (body fn))))))
 
 (defun beta-reduce (term)
   (tree-transform-if
