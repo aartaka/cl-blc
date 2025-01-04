@@ -8,6 +8,7 @@
        (eq 'λ (first term))))
 
 (defmacro define-generic (name (&rest args) &body (documentation . body))
+  (assert (stringp documentation))
   `(defgeneric ,name (,@(mapcar #'first (mapcar #'uiop:ensure-list args)))
      (:documentation ,documentation)
      (:method (,@args)

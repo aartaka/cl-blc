@@ -102,17 +102,35 @@ Supports:
           (nthcdr (1+ (length ones))
                   (rest data))))))))
 
+(defun blc->cl (term)
+  (labels ((replace-deep (term sym &optional (depth 0))
+             (cond
+               ((lambda-p term)
+                (list (first term) (replace-deep (second term) sym (1+ depth))))
+               ((listp term)
+                (list (replace-deep (first term) sym depth)
+                      (replace-deep (second term) sym depth)))
+               ((and (integerp term)
+                     (equal term depth))
+                sym)
+               (t term))))
+    (cond
+      ((lambda-p term)
+       (let ((sym (gensym "ARG")))
+         `(lambda (,sym)
+            ,(blc->cl (replace-deep (second term) sym)))))
+      ((listp term)
+       `(funcall ,(blc->cl (first term)) ,(blc->cl (second term))))
+      (t term))))
+
 (define-generic eval ((term cons))
-  "Evaluate TERM with all the available reductions.
-Reduces until there's nothing to reduce."
-  (loop for form = term
-          then (neighbor-reduce
-                (dead-reduce
-                 (eta+-reduce
-                  (beta-reduce form))))
-          and prev = form
-        until (equal prev form)
-        finally (return form)))
+  "Evaluate the TERM to the resulting function.
+If it's an application, apply the `eval'-uated head to `eval'-uated tail.
+Repeat recursively until there's a resulting function."
+  (if (lambda-p term)
+      (cl:compile nil (blc->cl term))
+      (funcall (eval (first term))
+               (eval (second term)))))
 
 (defgeneric compile (expr &optional stack)
   (:documentation "Compile Lispy EXPR into binary lambdas.
@@ -173,7 +191,7 @@ All the compilation is reversible with `coerce', given the right type.")
                    (compile nil))))
       (convert (cl:coerce expr 'list)))))
 
-(define-generic coerce ((term list) (type null) &optional inner-type final-type)
+(define-generic coerce ((term list) (type null) &optional inner-type)
   "Try converting the TERM to a Lisp TYPE.
 In case of success, return the respective TYPEd value.
 In case of failure, return the TERM unaltered.
@@ -181,76 +199,60 @@ TYPE might be one of:
 - BOOLEAN: T/NIL.
 - INTEGER/NUMBER: Churn numeral -> integer.
 - CHARACTER: Standard character (uses NUMBER method).
-- CONS/LIST: Convert to list of INNER-TYPE with last cdr of FINAL-TYPE.
+- CONS/LIST: Convert to list of INNER-TYPE.
 - STRING: A valid string (uses LIST off CHARACTERs method)."
-  (declare (ignorable inner-type final-type))
+  (declare (ignorable inner-type))
   (coerce term t))
 
-(defmethod coerce ((term list) (type (eql 'boolean)) &optional inner-type final-type)
-  (declare (ignorable inner-type final-type))
-  (cond
-    ((equal '(λ (λ 1)) term)
-     t)
-    ((equal '(λ (λ 0)) term)
-     nil)
-    (t term)))
+(defmethod coerce ((term function) (type (eql 'boolean)) &optional inner-type)
+  (declare (ignorable inner-type))
+  (handler-case
+      (funcall (funcall term t) nil)
+    (error () t)))
 
-(defmethod coerce ((term list) (type (eql 'integer)) &optional inner-type final-type)
-  (declare (ignorable inner-type final-type))
-  (or (ignore-errors
-       (loop with tail = (cadadr term)
-             while (and (eql 1 (first tail))
-                        (listp (second tail)))
-             count 1 into num
-             do (setf tail (second tail))
-             finally (return (if (and (listp tail)
-                                      (eql 1 (first tail))
-                                      (eql 0 (second tail)))
-                                 (1+ num)
-                                 nil))))
-      term))
+(defmethod coerce ((term list) (type (eql 'boolean)) &optional inner-type)
+  (declare (ignorable inner-type))
+  (coerce (eval term) type))
 
-(defmethod coerce ((term list) (type (eql 'number)) &optional inner-type final-type)
-  (declare (ignorable inner-type final-type))
+(defmethod coerce ((term function) (type (eql 'integer)) &optional inner-type)
+  (declare (ignorable inner-type))
+  (funcall (funcall term #'1+) 0))
+
+(defmethod coerce ((term list) (type (eql 'integer)) &optional inner-type)
+  (declare (ignorable inner-type))
+  (coerce (eval term) type))
+
+(defmethod coerce ((term t) (type (eql 'number)) &optional inner-type)
+  (declare (ignorable inner-type))
   (coerce term 'integer))
 
-(defmethod coerce ((term list) (type (eql 'character)) &optional inner-type final-type)
-  (declare (ignorable inner-type final-type))
+(defmethod coerce ((term t) (type (eql 'character)) &optional inner-type)
+  (declare (ignorable inner-type))
   (code-char (coerce term 'integer)))
 
-(defmethod coerce ((term list) (type (eql 'cons)) &optional inner-type final-type)
+(defmethod coerce ((term function) (type (eql 'cons)) &optional inner-type)
+  (loop with cons = term
+        while (coerce cons 'boolean)
+        for (first second) = (funcall cons (lambda (f) (lambda (s) (list f s))))
+        collect (if inner-type
+                    (coerce first inner-type)
+                    first)
+        do (setf cons second)))
+
+(defmethod coerce ((term list) (type (eql 'cons)) &optional inner-type)
   ;; Manage full term (with lambda in the front) instead?
-  (or (ignore-errors
-       (loop with cons = term
-             while (and (listp (cadr cons))
-                        (listp (caadr cons))
-                        (eql 0 (caaadr cons)))
-             collect (if inner-type
-                         (coerce (car (cdaadr cons)) inner-type)
-                         (car (cdaadr cons)))
-               into elems
-             do (setf cons (cadadr cons))
-             finally (if (equal '(λ (λ 0)) cons)
-                         (return elems)
-                         (progn
-                           (setf (cdr (last elems))
-                                 (cond
-                                   (final-type (coerce cons final-type))
-                                   (inner-type (coerce cons inner-type))
-                                   (t cons)))
-                           (return elems)))))
-      term))
+  (coerce (eval term) type inner-type))
 
-(defmethod coerce ((term list) (type (eql 'list)) &optional inner-type final-type)
-  (coerce term 'cons inner-type final-type))
+(defmethod coerce ((term t) (type (eql 'list)) &optional inner-type)
+  (coerce term 'cons inner-type))
 
-(defmethod coerce ((term list) (type (eql 'string)) &optional inner-type final-type)
-  (declare (ignorable inner-type final-type))
+(defmethod coerce ((term t) (type (eql 'string)) &optional inner-type)
+  (declare (ignorable inner-type))
   (cl:coerce (coerce term 'cons 'character)
              'string))
 
-(defmethod coerce ((term list) (type (eql t)) &optional inner-type final-type)
-  (declare (ignorable inner-type final-type))
+(defmethod coerce ((term t) (type (eql t)) &optional inner-type)
+  (declare (ignorable inner-type))
   (flet ((try-convert (term type)
            (let ((converted (coerce term type)))
              (if (eq converted term)
@@ -283,54 +285,3 @@ TYPE might be one of:
      (append (list 0 1)
              (term->bit-list (first term))
              (term->bit-list (second term))))))
-
-(define-generic write ((term list) &key (stream t) (literal nil) (pretty nil) (binary nil))
-  "Write the `read' or `compile'd TERM to STREAM.
-If PRETTY, try to convert TERM to number, list, or string.
-When BINARY, write raw bytes instead of one & zero chars.
-When literal, print the IR for the TERM.
-In the absence of the above, print ones and zeros for TERM."
-  (let ((initial-stream stream)
-        (stream (etypecase stream
-                  ((eql t) *standard-output*)
-                  (null (make-string-output-stream
-                         :element-type (if binary
-                                           '(unsigned-byte 8)
-                                           'character)))
-                  (stream stream))))
-    (cond
-      (binary
-       (loop for (one two three four five six seven eight . rest)
-               on (term->bit-list term) by (lambda (bits)
-                                             (nthcdr 8 bits))
-             while one
-             do (write-byte (+ (ash one 8)
-                               (ash (or two 0) 7)
-                               (ash (or three 0) 6)
-                               (ash (or four 0) 5)
-                               (ash (or five 0) 4)
-                               (ash (or six 0) 3)
-                               (ash (or seven 0) 2)
-                               (or eight 0))
-                            stream)))
-      (pretty
-       (cl:write (coerce term t) :stream stream
-                                 :escape t :circle nil :readably t
-                                 :level nil :length nil :right-margin nil))
-      (literal
-       (cl:write term :stream stream
-                      :escape t :circle nil :readably t
-                      :level nil :length nil :right-margin nil))
-      (t (loop for bit in (term->bit-list term)
-               do (format stream "~d" bit))))
-    (if (null initial-stream)
-        (get-output-stream-string stream)
-        (values))))
-
-(define-generic print ((term list) &optional (stream t))
-  "Print the literal (like (Λ (Λ 1))) BLC representation of the TERM to STREAM."
-  (write term :stream stream :literal t))
-
-(define-generic princ ((term list) &optional (stream t))
-  "Print the prettified (converted to Lisp whenever possible) TERM to STREAM."
-  (write term :stream stream :pretty t))
