@@ -5,9 +5,7 @@
   (:nicknames :blc)
   (:use :common-lisp)
   (:shadow #:read
-           #:optimize
            #:eval
-           #:apply
            #:compile
            #:coerce
            #:funcall)
