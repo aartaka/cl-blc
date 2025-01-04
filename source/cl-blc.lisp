@@ -172,7 +172,7 @@ All the compilation is reversible with `coerce', given the right type.")
     `(λ (λ ,(loop for i below expr
                   for num = (list 1 0)
                     then (list 1 num)
-                  finally (return num)))))
+                  finally (return (if (null num) 0 num))))))
   (:method ((expr character) &optional stack)
     (declare (ignorable stack))
     (compile (char-code expr)))
