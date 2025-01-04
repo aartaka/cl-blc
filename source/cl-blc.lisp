@@ -277,3 +277,63 @@ TYPE might be one of:
       (cl:apply fn arg other-args)
     (error ()
       (cl:apply #'funcall (cl:funcall fn arg) other-args))))
+
+(defun term->bit-list (term)
+  (cond
+    ((integerp term)
+     (append (loop for i from term downto 0
+                   collect 1)
+             (list 0)))
+    ((lambda-p term)
+     (append (list 0 0) (term->bit-list (second term))))
+    ((listp term)
+     (append (list 0 1)
+             (term->bit-list (first term))
+             (term->bit-list (second term))))))
+
+(define-generic write ((term list) &key (stream t) (format :universal))
+  "Write the `read' or `compile'd TERM to STREAM in FORMAT.
+If :PRETTY, try to convert TERM to number, list, or string.
+When :BINARY, write raw bytes instead of one & zero chars.
+When :LITERAL, print the IR for the TERM.
+In the absence of the above or with :UNIVERSAL, print ones and zeros for TERM."
+  (let ((initial-stream stream)
+        (stream (etypecase stream
+                  ((eql t) *standard-output*)
+                  (null (make-string-output-stream
+                         :element-type (if binary
+                                           '(unsigned-byte 8)
+                                           'character)))
+                  (stream stream))))
+    (case format
+      (:binary
+       (loop for (one two three four five six seven eight . rest)
+               on (term->bit-list term) by (lambda (bits)
+                                             (nthcdr 8 bits))
+             while one
+             do (write-byte (+ (ash one 8)
+                               (ash (or two 0) 7)
+                               (ash (or three 0) 6)
+                               (ash (or four 0) 5)
+                               (ash (or five 0) 4)
+                               (ash (or six 0) 3)
+                               (ash (or seven 0) 2)
+                               (or eight 0))
+                            stream)))
+      (:pretty
+       (cl:write (coerce term t) :stream stream
+                                 :escape t :circle nil :readably t
+                                 :level nil :length nil :right-margin nil))
+      (:literal
+       (cl:write term :stream stream
+                      :escape t :circle nil :readably t
+                      :level nil :length nil :right-margin nil))
+      (:universal
+       (loop for bit in (term->bit-list term)
+             do (format stream "~d" bit)))
+      (t
+       (loop for bit in (term->bit-list term)
+             do (format stream "~d" bit))))
+    (if (null initial-stream)
+        (get-output-stream-string stream)
+        (values))))

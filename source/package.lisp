@@ -8,11 +8,13 @@
            #:eval
            #:compile
            #:coerce
-           #:funcall)
+           #:funcall
+           #:write)
   (:export #:read
            #:eval
            #:compile
-           #:coerce)
+           #:coerce
+           #:write)
   (:documentation "`cl-blc' exports symbols shadowing standard CL.
 These symbols implement the logic similar to CL ones, but for Binary
 Lambda Calculus use-cases:
@@ -20,6 +22,7 @@ Lambda Calculus use-cases:
 - `eval' evaluates the given IR to a compiled function.
 - `compile' converts Lisp form/data into IR.
 - `coerce' converts IR/evaluation back to Lisp (effectively reversing `compile').
+- `write' converts IR (not evaluation!) to a variety of formats.
 
 IR is mapped directly from BLC:
 - Forms starting with λ are abstractions.
