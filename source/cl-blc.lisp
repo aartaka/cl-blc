@@ -107,7 +107,7 @@ Supports:
              (cond
                ((lambda-p term)
                 (list (first term) (replace-deep (second term) sym (1+ depth))))
-               ((listp term)
+               ((consp term)
                 (list (replace-deep (first term) sym depth)
                       (replace-deep (second term) sym depth)))
                ((and (integerp term)
@@ -119,7 +119,7 @@ Supports:
        (let ((sym (gensym "ARG")))
          `(lambda (,sym)
             ,(blc->cl (replace-deep (second term) sym)))))
-      ((listp term)
+      ((consp term)
        `(funcall ,(blc->cl (first term)) ,(blc->cl (second term))))
       (t term))))
 
