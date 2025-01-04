@@ -9,7 +9,8 @@
            #:eval
            #:apply
            #:compile
-           #:coerce)
+           #:coerce
+           #:funcall)
   (:export #:read
            #:eval
            #:compile

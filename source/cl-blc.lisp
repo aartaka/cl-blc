@@ -271,3 +271,9 @@ TYPE might be one of:
                   else
                     collect elem)))
         term)))
+
+(defun funcall (fn arg &rest other-args)
+  (handler-case
+      (cl:apply fn arg other-args)
+    (error ()
+      (cl:apply #'funcall (cl:funcall fn arg) other-args))))
