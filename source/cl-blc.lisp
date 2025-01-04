@@ -216,7 +216,7 @@ TYPE might be one of:
 
 (defmethod coerce ((term function) (type (eql 'integer)) &optional inner-type)
   (declare (ignorable inner-type))
-  (funcall (funcall term #'1+) 0))
+  (ignore-errors (funcall (funcall term #'1+) 0)))
 
 (defmethod coerce ((term list) (type (eql 'integer)) &optional inner-type)
   (declare (ignorable inner-type))
@@ -248,8 +248,7 @@ TYPE might be one of:
 
 (defmethod coerce ((term t) (type (eql 'string)) &optional inner-type)
   (declare (ignorable inner-type))
-  (cl:coerce (coerce term 'cons 'character)
-             'string))
+  (cl:coerce (coerce term 'cons 'character) 'string))
 
 (defmethod coerce ((term t) (type (eql t)) &optional inner-type)
   (declare (ignorable inner-type))
