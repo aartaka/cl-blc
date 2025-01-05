@@ -197,7 +197,7 @@ In case of success, return the respective TYPEd value.
 In case of failure, return the TERM unaltered.
 TYPE might be one of:
 - BOOLEAN: T/NIL.
-- INTEGER/NUMBER: Churn numeral -> integer.
+- INTEGER/NUMBER: Church numeral -> integer.
 - CHARACTER: Standard character (uses NUMBER method).
 - CONS/LIST: Convert to list of INNER-TYPE.
 - STRING: A valid string (uses LIST off CHARACTERs method)."
