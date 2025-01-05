@@ -240,7 +240,6 @@ TYPE might be one of:
         do (setf cons second)))
 
 (defmethod coerce ((term list) (type (eql 'cons)) &optional inner-type)
-  ;; Manage full term (with lambda in the front) instead?
   (coerce (eval term) type inner-type))
 
 (defmethod coerce ((term t) (type (eql 'list)) &optional inner-type)
