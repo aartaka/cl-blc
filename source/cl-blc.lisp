@@ -118,6 +118,7 @@ Supports:
       ((lambda-p term)
        (let ((sym (gensym "ARG")))
          `(lambda (,sym)
+            (declare (ignorable ,sym))
             ,(blc->cl (replace-deep (body term) sym)))))
       ((consp term)
        `(funcall ,(blc->cl (first term)) ,(blc->cl (second term))))
@@ -285,7 +286,7 @@ TYPE might be one of:
              (list 0)))
     ((lambda-p term)
      (append (list 0 0) (term->bit-list (body term))))
-    ((listp term)
+    ((consp term)
      (append (list 0 1)
              (term->bit-list (first term))
              (term->bit-list (second term))))))
@@ -299,25 +300,23 @@ In the absence of the above or with :UNIVERSAL, print ones and zeros for TERM."
   (let ((initial-stream stream)
         (stream (etypecase stream
                   ((eql t) *standard-output*)
-                  (null (make-string-output-stream
-                         :element-type (if binary
-                                           '(unsigned-byte 8)
-                                           'character)))
+                  (null (make-string-output-stream))
                   (stream stream))))
-    (case format
+    (ecase format
       (:binary
        (loop for (one two three four five six seven eight . rest)
                on (term->bit-list term) by (lambda (bits)
                                              (nthcdr 8 bits))
              while one
-             do (write-byte (+ (ash one 8)
-                               (ash (or two 0) 7)
-                               (ash (or three 0) 6)
-                               (ash (or four 0) 5)
-                               (ash (or five 0) 4)
-                               (ash (or six 0) 3)
-                               (ash (or seven 0) 2)
-                               (or eight 0))
+             do (write-char (code-char
+                             (+ (ash one 8)
+                                (ash (or two 0) 7)
+                                (ash (or three 0) 6)
+                                (ash (or four 0) 5)
+                                (ash (or five 0) 4)
+                                (ash (or six 0) 3)
+                                (ash (or seven 0) 2)
+                                (or eight 0)))
                             stream)))
       (:pretty
        (cl:write (coerce term t) :stream stream
@@ -328,9 +327,6 @@ In the absence of the above or with :UNIVERSAL, print ones and zeros for TERM."
                       :escape t :circle nil :readably t
                       :level nil :length nil :right-margin nil))
       (:universal
-       (loop for bit in (term->bit-list term)
-             do (format stream "~d" bit)))
-      (t
        (loop for bit in (term->bit-list term)
              do (format stream "~d" bit))))
     (if (null initial-stream)
