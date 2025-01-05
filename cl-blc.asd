@@ -21,7 +21,8 @@
                 ((:file "package")
                  (:file "utils")
                  (:file "reductions")
-                 (:file "cl-blc"))))
+                 (:file "cl-blc")
+                 (:file "cli"))))
   :in-order-to ((test-op (test-op "cl-blc/tests"))))
 
 (defsystem "cl-blc/tests"
