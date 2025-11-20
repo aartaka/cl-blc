@@ -13,7 +13,9 @@ all: blc
 clean:
 	rm blc
 
-blc:
+source_files = $(shell echo source/*.lisp)
+
+blc: $(source_files)
 	$(LISP) $(LISP_FLAGS) --eval '(require "asdf")' --load cl-blc.asd --eval '(asdf:load-system :cl-blc)' --eval '(asdf:make :cl-blc)' --eval '(quit)'
 
 install: sade
