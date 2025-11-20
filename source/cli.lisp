@@ -79,10 +79,8 @@ TYPE, when compiling the PROG, or running it, is the output style:
 
 IN is either file name, Lisp expression (number, T/NIL boolean,
 string, or list of thereof), or --, meaning standard input. When
-reading from standard input, the input ends either
-- When there's a line with a dot (.) on its own.
-- When there's a line with exclamation mark (!) on its own.
-- When the input is terminated with null char (Ctrl-D on *nix).
+reading from standard input, the input should be terminated with null
+char (Ctrl-D on *nix).
 
 OUT is either a file name or -- to print to standard output.~%")
       (uiop:shell-boolean-exit t))
