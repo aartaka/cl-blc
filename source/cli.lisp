@@ -40,9 +40,7 @@
     (:character (format out "~&~c~%" (coerce res 'character)))
     ((:number :integer) (format out "~&~d~%" (coerce res 'number)))
     (:boolean (format out "~&~:[false~;true~]~%" (coerce res 'boolean)))
-    (:pretty (princ res out))
-    (:universal (write res :stream out))
-    (:binary (write res :stream out :format :binary))))
+    (:pretty (princ res out))))
 
 (defun entry-point ()
   (let* ((args uiop:*command-line-arguments*)
@@ -74,12 +72,10 @@ provided in IN, as a single cons.
 TYPE, when compiling the PROG, or running it, is the output style:
 - pretty: aggressively try to meaningfully print the returned
   value. As number, cons, boolean etc.
-- universal: Print out the ones and zeros for the result.
-- binary: Print result as packed bytes.
 - string (default): print the (mandatory) returned cons list as
   string.
 - number: print the resulting number.
-- boolean: print the result as boolean.
+- boolean: print the result as a boolean.
 
 IN is either file name, Lisp expression (number, T/NIL boolean,
 string, or list of thereof), or --, meaning standard input. When
