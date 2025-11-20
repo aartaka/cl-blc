@@ -55,6 +55,7 @@ Usage:
   blc [command] [args]
 
 Commands are:
+  help
   compile     prog type     bin
   run         prog type in  out
   uni2bin               in  out
@@ -67,7 +68,7 @@ Compiled binary use:
 
 PROG is a file with .Blc (true binary) or .blc (ASCII ones and zeros)
 extension. The function contained within will be run with input
-provided in IN, as a single cons.
+provided in IN, as a single cons list of characters.
 
 TYPE, when compiling the PROG, or running it, is the output style:
 - pretty: aggressively try to meaningfully print the returned
